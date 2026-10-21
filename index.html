@@ -1,0 +1,44 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>每日推送存档</title>
+<style>
+:root{--fg:#2b2622;--mute:#8a8178;--bg:#faf7f2;--line:#e8e1d6;--acc:#8b5e3c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;line-height:1.8}
+.wrap{max-width:760px;margin:0 auto;padding:28px 18px 80px}
+h1{font-weight:600;font-size:1.6rem;letter-spacing:.1em;margin:0 0 4px}.sub{color:var(--mute);font-size:.9rem;margin-bottom:20px}
+.bar{position:sticky;top:0;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line);z-index:2}
+input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff}
+.cats{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.cats button{font:inherit;font-size:.88rem;border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 14px;cursor:pointer;color:var(--fg)}
+.cats button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.item{padding:16px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.meta{color:var(--mute);font-size:.82rem}.meta b{color:var(--acc);font-weight:500;margin-right:8px}
+.t{font-size:1.08rem;margin-top:2px}.ex{color:var(--mute);font-size:.9rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.body{display:none;white-space:pre-wrap;word-break:break-word;margin-top:12px;font-size:1.02rem;cursor:auto}
+.item.open .body{display:block}.item.open .ex{display:none}
+.card{display:block;width:100%;max-width:540px;height:auto;margin:12px auto 4px;border-radius:6px;background:#eee;cursor:zoom-in}
+.cap{text-align:center;font-size:.78rem;color:var(--mute)}
+.note{font-size:.82rem;color:#a0522d;background:#fbefe4;padding:4px 8px;border-radius:4px;margin-top:6px}
+mark{background:#f6e3b4}.empty{color:var(--mute);padding:30px 0;text-align:center}
+</style></head><body><div class="wrap">
+<h1>每日推送存档</h1><div class="sub">晨读 · 30u30 · 午读 · 夜读　<span id="cnt"></span></div>
+<div class="bar"><input id="q" placeholder="搜索标题或正文…" type="search"><div class="cats" id="cats"></div></div>
+<div id="list"></div></div>
+<script>
+let D=[],cat='全部';const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function hl(s,q){s=esc(s);if(!q)return s;const e=esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return s.replace(new RegExp(e,'gi'),m=>'<mark>'+m+'</mark>')}
+function render(){const q=$('#q').value.trim().toLowerCase();
+ const r=D.filter(p=>(cat=='全部'||p.category==cat)&&(!q||(p.title+'\n'+p.body).toLowerCase().includes(q)));
+ $('#cnt').textContent='共 '+r.length+' 篇';
+ $('#list').innerHTML=r.length?r.map(p=>`<div class="item" id="${esc(p.id)}"><div class="meta"><b>${esc(p.category)}</b>${p.date} ${p.time}</div><div class="t">${hl(p.title,q)}</div>${p.note?`<div class="note">${esc(p.note)}</div>`:''}<div class="ex">${esc(p.body.slice(0,160))}</div><div class="body">${p.image?`<a href="${p.image}" target="_blank" rel="noopener"><img class="card" loading="lazy" decoding="async" data-src="${p.image}" width="${p.image_w||1080}" height="${p.image_h||1440}" alt="卡片"></a><div class="cap">点按查看原图 ${p.image_w||''}×${p.image_h||''}</div>`:''}${hl(p.body,q)}</div></div>`).join(''):'<div class="empty">没有匹配的推送</div>';}
+document.addEventListener('click',e=>{const it=e.target.closest('.item');if(!it||e.target.closest('.body'))return;it.classList.toggle('open');load(it);if(it.classList.contains('open'))history.replaceState(0,'','#'+it.id)});
+function load(it){it.querySelectorAll('img[data-src]').forEach(i=>{i.src=i.dataset.src;i.removeAttribute('data-src')})}
+$('#q').oninput=render;
+fetch('data/pushes.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{D=j;
+ const cs=['全部',...['晨读','30u30','午读','夜读'].filter(c=>j.some(p=>p.category==c)),...[...new Set(j.map(p=>p.category))].filter(c=>!['晨读','30u30','午读','夜读'].includes(c))];
+ $('#cats').innerHTML=cs.map(c=>`<button class="${c==cat?'on':''}">${c}</button>`).join('');
+ $('#cats').onclick=e=>{if(e.target.tagName!='BUTTON')return;cat=e.target.textContent;[...$('#cats').children].forEach(b=>b.classList.toggle('on',b==e.target));render()};
+ render();const h=decodeURIComponent(location.hash.slice(1));if(h){const el=document.getElementById(h);if(el){el.classList.add('open');load(el);el.scrollIntoView()}}});
+</script></body></html>
